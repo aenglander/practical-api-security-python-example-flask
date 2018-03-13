@@ -1,31 +1,25 @@
-from flask import Flask, request, json, make_response, jsonify, request_started, request_finished
-from Cryptodome.Cipher import AES
+from flask import Flask, request, jsonify, request_started, request_finished
 from jwkest.jwk import SYMKey
-from jwkest.jws import JWS
+from werkzeug.contrib.cache import SimpleCache
 
-from signals import EncryptionSignalHandler, TokenSignalHandler
+from exceptions import HttpException
+from signals import EncryptionSignalHandler, TokenSignalHandler, ReplayPreventionSignalHandler
 
 app = Flask(__name__)
 
 
-jwk = SYMKey(use="sig", kid="key1", key="Super Secret Secret")
+cache = SimpleCache()
 
+replay_prevention_signal_handler = ReplayPreventionSignalHandler(cache)
+token_signal_handler = TokenSignalHandler([SYMKey(use="sig", kid="key1", key="Super Secret Secret")])
+encryption_signal_handler = EncryptionSignalHandler([SYMKey(use="enc", kid="key1", key="Super Secret Secret")])
 
-token_signal_handler = TokenSignalHandler([jwk])
-request_started.connect(token_signal_handler.request_started_handler, app)
-request_finished.connect(token_signal_handler.request_finished_handler, app)
-
-encryption_signal_handler = EncryptionSignalHandler()
 request_started.connect(encryption_signal_handler.request_started_handler, app)
+request_started.connect(token_signal_handler.request_started_handler, app)
+request_started.connect(replay_prevention_signal_handler.request_started_handler, app)
+
+request_finished.connect(token_signal_handler.request_finished_handler, app)
 request_finished.connect(encryption_signal_handler.request_finished_handler, app)
-
-
-class HttpException(Exception):
-
-    def __init__(self, message, code=500) -> None:
-        super().__init__(message)
-        self.code = code
-        self.message = message
 
 
 @app.errorhandler(HttpException)
