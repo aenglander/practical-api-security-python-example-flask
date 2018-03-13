@@ -7,7 +7,7 @@ from flask import request, json, Request
 from jwkest.jwe import JWE
 from jwkest.jwk import Key
 from jwkest.jws import JWS
-from hashlib import sha256
+from hashlib import sha512
 from werkzeug.contrib.cache import BaseCache
 
 from exceptions import HttpException
@@ -15,7 +15,7 @@ from exceptions import HttpException
 
 def get_token_from_request(request: Request):
     header = request.headers.get('Authentication', u'')
-    regex = re.compile(u"^Bearer (?P<token>.*)$")
+    regex = re.compile(u"^EX-JWT (?P<token>.*)$")
     matches = regex.match(header)
     if matches is None:
         token = None
@@ -47,8 +47,8 @@ class TokenSignalHandler:
             'aud': request.jwt_claims['iss'],
             'response': {
                 'status_code': response.status_code,
-                'body_hash_alg': 'S256',
-                'body_hash': sha256(response.data).hexdigest()
+                'body_hash_alg': 'S512',
+                'body_hash': sha512(response.data).hexdigest()
             }
 
         }
@@ -62,7 +62,9 @@ class EncryptionSignalHandler:
         self._keys = keys
 
     def request_started_handler(self, sender, **extra):
-        pass
+        if request.content_type == u'application/jose':
+            jwe = JWE()
+            decrypted = jwe.decrypt(request.body, self._keys)
 
     def request_finished_handler(self, sender, response, **extra):
         if response.content_type == 'application/json':
@@ -80,3 +82,5 @@ class ReplayPreventionSignalHandler:
         token = get_token_from_request(request)
         if token is None:
             raise HttpException("Authorization required", 401)
+        if not self.__cache.add(sha512(token.encode('utf-8')), 1):
+            raise HttpException("Invalid Request", 400)
