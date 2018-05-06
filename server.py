@@ -3,7 +3,7 @@ from jwkest.jwk import SYMKey
 from werkzeug.contrib.cache import SimpleCache
 
 from exceptions import HttpException
-from signals import EncryptionSignalHandler, TokenSignalHandler, ReplayPreventionSignalHandler, \
+from signals import EncryptionSignalHandler, ReplayPreventionSignalHandler, \
     RateLimitingSignalHandler
 
 app = Flask(__name__)
@@ -12,17 +12,13 @@ cache = SimpleCache()
 
 replay_prevention_signal_handler = ReplayPreventionSignalHandler(cache)
 rate_limiting_signal_handler = RateLimitingSignalHandler(cache, 1, 10)
-token_signal_handler = TokenSignalHandler(
-    [SYMKey(use="sig", kid="key1", key="bc926745ef6c8dda6ed2689d08d5793d7525cb81")], leeway=1, cache=cache)
 encryption_signal_handler = EncryptionSignalHandler(
     [SYMKey(use="enc", kid="key1", key="bc926745ef6c8dda6ed2689d08d5793d7525cb81")])
 
 request_started.connect(encryption_signal_handler.request_started_handler, app)
-request_started.connect(token_signal_handler.request_started_handler, app)
 request_started.connect(rate_limiting_signal_handler.request_started_handler, app)
 request_started.connect(replay_prevention_signal_handler.request_started_handler, app)
 
-request_finished.connect(token_signal_handler.request_finished_handler, app)
 request_finished.connect(encryption_signal_handler.request_finished_handler, app)
 
 
