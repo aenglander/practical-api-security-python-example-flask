@@ -14,18 +14,6 @@ from werkzeug.contrib.cache import BaseCache
 from exceptions import HttpException
 
 
-class ReplayPreventionSignalHandler:
-    def __init__(self, cache: BaseCache) -> None:
-        self.__cache = cache
-
-    def request_started_handler(self, sender, **extra):
-        token = request.headers.get('Authorization', None)
-        if token is None:
-            raise HttpException("Authorization Required!", 401)
-        if not self.__cache.add(sha512(token.encode('utf-8')), 1):
-            raise HttpException("Invalid Request: Replay Detected", 400)
-
-
 class RateLimitingSignalHandler:
     def __init__(self, cache: BaseCache, rate_count: int, rate_seconds: int) -> None:
         self.__cache = cache
