@@ -3,15 +3,8 @@ from jwkest.jwk import SYMKey
 from werkzeug.contrib.cache import SimpleCache
 
 from exceptions import HttpException
-from signals import RateLimitingSignalHandler
 
 app = Flask(__name__)
-
-cache = SimpleCache()
-
-rate_limiting_signal_handler = RateLimitingSignalHandler(cache, 1, 10)
-
-request_started.connect(rate_limiting_signal_handler.request_started_handler, app)
 
 
 @app.errorhandler(Exception)

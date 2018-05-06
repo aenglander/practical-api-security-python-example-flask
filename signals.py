@@ -12,20 +12,3 @@ from hashlib import sha512
 from werkzeug.contrib.cache import BaseCache
 
 from exceptions import HttpException
-
-
-class RateLimitingSignalHandler:
-    def __init__(self, cache: BaseCache, rate_count: int, rate_seconds: int) -> None:
-        self.__cache = cache
-        self.__rate_count = rate_count
-        self.__rate_seconds = rate_seconds
-
-    def request_started_handler(self, sender, **extra):
-        def _get_cache_key():
-            time_chunk = int(datetime.utcnow().timestamp()) // self.__rate_seconds
-            key = "{}-{}-{}".format(request.path, request.method, time_chunk)
-            return key
-
-        cache_key = _get_cache_key()
-        if self.__cache.inc(cache_key) > self.__rate_count:
-            raise HttpException("Rate limit exceeded", 429)
