@@ -37,7 +37,7 @@ class TokenSignalHandler:
     def request_started_handler(self, sender, **extra):
         token = get_token_from_request(request)
         if not token:
-            raise HttpException("No EX-JWT authorization token provided")
+            raise HttpException("No EX-JWT authorization token provided", 401)
 
         try:
             self._request_jwt_claims = JWS().verify_compact(token, self._keys)

@@ -69,6 +69,7 @@ def _get_request_data():
         method = 'GET'
         body = None
         headers = dict()
+        print("=== No Request ===")
     else:
         method = 'POST'
         data = json.dumps({'name': config.name}, indent=2)
