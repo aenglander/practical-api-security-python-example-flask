@@ -84,7 +84,9 @@ def _get_request_data():
             headers = {'content-type': 'application/jose'}
 
     path = '/'
-    if not config.no_jwt:
+    if config.no_jwt:
+        jti = None
+    else:
         jti = str(uuid1())
         jwt = _get_request_token(method, path, body, jti, config.issuer, config.audience)
         headers['Authentication'] = 'EX-JWT {}'.format(jwt)
@@ -155,3 +157,5 @@ if response.headers.get('content-type') == 'application/jose':
     decoded = decrypted.decode()
     print("Decrypted Body:")
     print(decoded)
+elif not config.verbose:
+    print(response.text)

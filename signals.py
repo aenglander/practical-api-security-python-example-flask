@@ -80,7 +80,7 @@ class TokenSignalHandler:
         elif self._request_jwt_claims['request']['method'] != request.method:
             errors.append("invalid request[method] claim")
 
-        if request.content_length > 0:
+        if request.content_length is not None and request.content_length > 0:
             if 'body_hash_alg' not in self._request_jwt_claims['request']:
                 errors.append("request[body_hash_alg] claim missing")
             elif self._request_jwt_claims['request']['body_hash_alg'] not in self._hash_algs:

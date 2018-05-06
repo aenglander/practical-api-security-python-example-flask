@@ -26,9 +26,14 @@ request_finished.connect(token_signal_handler.request_finished_handler, app)
 request_finished.connect(encryption_signal_handler.request_finished_handler, app)
 
 
-@app.errorhandler(HttpException)
-def error_handler(exception: HttpException):
-    return jsonify({'error': exception.message}), exception.code
+@app.errorhandler(Exception)
+def error_handler(exception: Exception):
+    if isinstance(exception, HttpException):
+        response = jsonify({'error': exception.message}), exception.code
+    else:
+        response = jsonify({'error': str(exception)}), 500
+
+    return response
 
 
 @app.route('/', methods=('GET', 'POST'))
