@@ -28,6 +28,7 @@ parser.add_argument('--audience', help='JWT Audience', default='api-server', des
 
 config = parser.parse_args()
 config.no_jwt = True
+config.no_encryption = True
 
 sig_keys = [SYMKey(use='sig', kid=config.key_id, key=config.key)]
 enc_keys = [SYMKey(use='enc', kid=config.key_id, key=config.key)]

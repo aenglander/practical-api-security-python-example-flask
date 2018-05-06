@@ -14,26 +14,6 @@ from werkzeug.contrib.cache import BaseCache
 from exceptions import HttpException
 
 
-class EncryptionSignalHandler:
-    def __init__(self, keys: List[Key]) -> None:
-        self._keys = keys
-
-    def request_started_handler(self, sender, **extra):
-        if request.content_type == u'application/jose':
-            jwe = JWE()
-            decrypted = jwe.decrypt(request.get_data(), self._keys)
-            request._cached_data = decrypted
-            request._cached_json = json.loads(decrypted)
-
-    def request_finished_handler(self, sender, response: Response, **extra):
-        if 200 >= response.status_code < 300 and response.content_type == 'application/json':
-            data = response.get_data(as_text=True)
-            jwe = JWE(data, alg='A256KW', enc='A256CBC-HS512', cty='application/json')
-            encrypted = jwe.encrypt(self._keys, kid=self._keys[0].kid)
-            response.content_type = 'application/jose'
-            response.data = encrypted
-
-
 class ReplayPreventionSignalHandler:
     def __init__(self, cache: BaseCache) -> None:
         self.__cache = cache
