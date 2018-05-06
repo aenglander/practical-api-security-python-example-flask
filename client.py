@@ -78,7 +78,7 @@ def _get_request_data():
         print()
         if config.no_encryption:
             body = data
-            headers = dict()
+            headers = {'content-type': 'application/json'}
         else:
             jwe = JWE(data, alg='A256KW', enc='A256CBC-HS512', cty='application/json')
             body = jwe.encrypt(enc_keys)
