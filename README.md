@@ -32,7 +32,7 @@ with your other Python applications. Instructions can be found here:
 Run a PIP install with the [requirements](requirements.txt) file:
 
 ```bash
-pip install requirements.txt
+pip install -r requirements.txt
 ```
 
 ### Verifying the installation
