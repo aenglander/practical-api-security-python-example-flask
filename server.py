@@ -4,7 +4,7 @@ from werkzeug.contrib.cache import SimpleCache
 
 from exceptions import HttpException
 from signals import EncryptionSignalHandler, TokenSignalHandler, ReplayPreventionSignalHandler, \
-    RateLimitingSignalHandler
+    RateLimitingSignalHandler, OrderedSignalHandler
 
 app = Flask(__name__)
 
@@ -17,13 +17,11 @@ token_signal_handler = TokenSignalHandler(
 encryption_signal_handler = EncryptionSignalHandler(
     [SYMKey(use="enc", kid="key1", key="bc926745ef6c8dda6ed2689d08d5793d7525cb81")])
 
-request_started.connect(encryption_signal_handler.request_started_handler, app)
-request_started.connect(token_signal_handler.request_started_handler, app)
-request_started.connect(rate_limiting_signal_handler.request_started_handler, app)
-request_started.connect(replay_prevention_signal_handler.request_started_handler, app)
+signal_handler = OrderedSignalHandler(
+    replay_prevention_signal_handler, rate_limiting_signal_handler, token_signal_handler, encryption_signal_handler)
 
-request_finished.connect(token_signal_handler.request_finished_handler, app)
-request_finished.connect(encryption_signal_handler.request_finished_handler, app)
+request_started.connect(signal_handler.request_started_handler, app)
+request_finished.connect(signal_handler.request_finished_handler, app)
 
 
 @app.errorhandler(Exception)
