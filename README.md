@@ -11,7 +11,7 @@ Installing
 
 * [Git](https://git-scm.com/downloads)
 * [Python 3.6](https://www.python.org/downloads/release)
-* [PIP](https://pip.pypa.io/en/stable/installing/)
+* [pipenv](https://docs.pipenv.org/install/#installing-pipenv)
 
 ### Clone This Repository
 
@@ -21,18 +21,20 @@ Clone this repository to your computer
 git clone https://github.com/aenglander/practical-api-security-python-example-flask.git
 ```
 
-### Setup Virtual Environment (Optional)
+### Installing Requirements and Virtual Environment
 
-Optionally, you can set up a virtual environment for the demo application to prevent the demo from interfering
-with your other Python applications. Instructions can be found here:
-[Creating Virtual Environments](https://docs.python.org/3/tutorial/venv.html#creating-virtual-environments).
-
-### Installing Requirements
-
-Run a PIP install with the [requirements](requirements.txt) file:
+Run a pipenv install:
 
 ```bash
-pip install -r requirements.txt
+pipenv install
+```
+
+### Start Virtual Environment
+
+Start a pipenv shell:
+
+```bash
+pipenv shell
 ```
 
 ### Verifying the installation
