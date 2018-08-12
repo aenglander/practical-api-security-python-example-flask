@@ -1,0 +1,15 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+blinker = "~=1.4.0"
+pyjwkest = "~=1.4.0"
+requests = "~=2.18.4"
+Flask = "~=0.12.2"
+
+[dev-packages]
+
+[requires]
+python_version = "3.6"
