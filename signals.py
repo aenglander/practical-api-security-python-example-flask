@@ -131,7 +131,7 @@ class EncryptionSignalHandler:
             request._cached_json = json.loads(decrypted)
 
     def request_finished_handler(self, sender, response: Response, **extra):
-        if 200 >= response.status_code < 300 and response.content_type == 'application/json':
+        if 200 <= response.status_code < 300 and response.content_type == 'application/json':
             data = response.get_data(as_text=True)
             jwe = JWE(data, alg='A256KW', enc='A256CBC-HS512', cty='application/json')
             encrypted = jwe.encrypt(self._keys, kid=self._keys[0].kid)
