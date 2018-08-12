@@ -1,6 +1,5 @@
 import hashlib
 from datetime import datetime
-from time import time
 from typing import List
 import re
 from flask import request, json, Request, Response
@@ -14,6 +13,33 @@ from werkzeug.contrib.cache import BaseCache
 from exceptions import HttpException
 
 
+class SignalHandler:
+    def request_started_handler(self, sender, **extra):
+        raise NotImplementedError
+
+    def request_finished_handler(self, sender, response: Response, **extra):
+        raise NotImplementedError
+
+
+class OrderedSignalHandler(SignalHandler):
+    """
+    This class ensure that signal handlers are executed in order to recreate
+    the functionality of middleware. Signal handlers are executed in an
+    arbitrary order which is not how we want our handlers to work. This class
+    gets around that problem.
+    """
+    def __init__(self, *signal_handlers: List[SignalHandler]) -> None:
+        self.__signal_handlers = signal_handlers
+
+    def request_started_handler(self, sender, **extra):
+        for signal_handler in self.__signal_handlers:
+            signal_handler.request_started_handler(sender, **extra)
+
+    def request_finished_handler(self, sender, response: Response, **extra):
+        for signal_handler in reversed(self.__signal_handlers):
+            signal_handler.request_finished_handler(sender, response, **extra)
+
+
 def get_token_from_request(request: Request):
     header = request.headers.get('Authentication', u'')
     regex = re.compile(u"^EX-JWT (?P<token>.*)$")
@@ -25,7 +51,7 @@ def get_token_from_request(request: Request):
     return token
 
 
-class TokenSignalHandler:
+class TokenSignalHandler(SignalHandler):
 
     def __init__(self, keys: List, leeway: int, cache: BaseCache) -> None:
         self._keys = keys
@@ -119,7 +145,7 @@ class TokenSignalHandler:
             response.headers['X-JWT'] = signed_content
 
 
-class EncryptionSignalHandler:
+class EncryptionSignalHandler(SignalHandler):
     def __init__(self, keys: List[Key]) -> None:
         self._keys = keys
 
@@ -139,7 +165,7 @@ class EncryptionSignalHandler:
             response.data = encrypted
 
 
-class ReplayPreventionSignalHandler:
+class ReplayPreventionSignalHandler(SignalHandler):
     def __init__(self, cache: BaseCache) -> None:
         self.__cache = cache
 
@@ -150,8 +176,11 @@ class ReplayPreventionSignalHandler:
         if not self.__cache.add(sha512(token.encode('utf-8')), 1):
             raise HttpException("Invalid Request: Replay Detected", 400)
 
+    def request_finished_handler(self, sender, response: Response, **extra):
+        pass
 
-class RateLimitingSignalHandler:
+
+class RateLimitingSignalHandler(SignalHandler):
     def __init__(self, cache: BaseCache, rate_count: int, rate_seconds: int) -> None:
         self.__cache = cache
         self.__rate_count = rate_count
@@ -166,3 +195,6 @@ class RateLimitingSignalHandler:
         cache_key = _get_cache_key()
         if self.__cache.inc(cache_key) > self.__rate_count:
             raise HttpException("Rate limit exceeded", 429)
+
+    def request_finished_handler(self, sender, response: Response, **extra):
+        pass
