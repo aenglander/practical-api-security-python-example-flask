@@ -28,7 +28,6 @@ parser.add_argument('--issuer', help='JWT Issuer', default='valid-client', dest=
 parser.add_argument('--audience', help='JWT Audience', default='api-server', dest='audience')
 
 config = parser.parse_args()
-config.no_jwt = True
 
 sig_keys = [SYMKey(use='sig', kid=config.key_id, key=config.key)]
 enc_keys = [SYMKey(use='enc', kid=config.key_id, key=config.key)]
@@ -92,7 +91,7 @@ def _get_request_data():
         headers['Authorization'] = 'Nonce {}'.format(jti)
     else:
         jwt = _get_request_token(method, path, body, jti, config.issuer, config.audience)
-        headers['Authentication'] = 'EX-JWT {}'.format(jwt)
+        headers['Authorization'] = 'EX-JWT {}'.format(jwt)
 
     if config.verbose:
         print(method, path, "HTTP/1.1")
