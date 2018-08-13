@@ -154,7 +154,8 @@ class EncryptionSignalHandler(SignalHandler):
             jwe = JWE()
             decrypted = jwe.decrypt(request.get_data(), self._keys)
             request._cached_data = decrypted
-            request._cached_json = json.loads(decrypted)
+            cached_json = json.loads(decrypted)
+            request._cached_json = (cached_json, cached_json)
 
     def request_finished_handler(self, sender, response: Response, **extra):
         if 200 <= response.status_code < 300 and response.content_type == 'application/json':
