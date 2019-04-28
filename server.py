@@ -19,8 +19,6 @@ signal_handler = OrderedSignalHandler(replay_prevention_signal_handler,
 request_started.connect(signal_handler.request_started_handler, app)
 request_finished.connect(signal_handler.request_finished_handler, app)
 
-cache = SimpleCache()
-
 
 @app.errorhandler(Exception)
 def error_handler(exception: Exception):
