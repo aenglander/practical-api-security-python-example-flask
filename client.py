@@ -14,6 +14,7 @@ from requests import Request, Session
 parser = argparse.ArgumentParser(description='Make an API request')
 parser.add_argument('name', type=str, nargs='?', help='Name to send to the API')
 parser.add_argument('-v', '--verbose', help='Verbose output', default=False, dest='verbose', action='store_true')
+parser.add_argument('--no-nonce', help='Send no unique nonce with the request', default=False, dest='no_nonce', action='store_true')
 parser.add_argument('--no-jwt', help='Send no JWT with the request', default=False, dest='no_jwt', action='store_true')
 parser.add_argument('--no-encryption', help='Send the request without encryption', default=False, dest='no_encryption',
                     action='store_true')
@@ -87,9 +88,8 @@ def _get_request_data():
             headers = {'content-type': 'application/jose'}
 
     path = '/'
-    jti = str(uuid1())
+    jti = None if config.no_nonce else str(uuid1())
     if config.no_jwt:
-        jti = None
         headers['Authorization'] = 'Nonce {}'.format(jti)
     else:
         jwt = _get_request_token(method, path, body, jti, config.issuer, config.audience)

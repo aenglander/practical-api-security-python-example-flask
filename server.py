@@ -3,12 +3,15 @@ from jwkest.jwk import SYMKey
 from cachelib import SimpleCache
 
 from exceptions import HttpException
-from signals import OrderedSignalHandler
+from signals import OrderedSignalHandler, ReplayPreventionSignalHandler
 
 app = Flask(__name__)
 
 
-signal_handler = OrderedSignalHandler()
+cache = SimpleCache()
+replay_prevention_signal_handler = ReplayPreventionSignalHandler(cache)
+
+signal_handler = OrderedSignalHandler(replay_prevention_signal_handler)
 
 request_started.connect(signal_handler.request_started_handler, app)
 request_finished.connect(signal_handler.request_finished_handler, app)
