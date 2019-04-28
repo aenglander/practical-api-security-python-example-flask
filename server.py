@@ -17,6 +17,7 @@ request_started.connect(signal_handler.request_started_handler, app)
 request_finished.connect(signal_handler.request_finished_handler, app)
 
 
+
 @app.errorhandler(Exception)
 def error_handler(exception: Exception):
     if isinstance(exception, HttpException):
