@@ -4,7 +4,7 @@ from cachelib import SimpleCache
 
 from exceptions import HttpException
 from signals import OrderedSignalHandler, ReplayPreventionSignalHandler, \
-    RateLimitingSignalHandler
+    RateLimitingSignalHandler, EncryptionSignalHandler
 
 app = Flask(__name__)
 
@@ -12,9 +12,12 @@ app = Flask(__name__)
 cache = SimpleCache()
 replay_prevention_signal_handler = ReplayPreventionSignalHandler(cache)
 rate_limiting_signal_handler = RateLimitingSignalHandler(cache, 1, 10)
+encryption_signal_handler = EncryptionSignalHandler(
+    [SYMKey(use="enc", kid="key1", key="bc926745ef6c8dda6ed2689d08d5793d7525cb81")])
 
 signal_handler = OrderedSignalHandler(replay_prevention_signal_handler,
-                                      rate_limiting_signal_handler)
+                                      rate_limiting_signal_handler,
+                                      encryption_signal_handler)
 
 request_started.connect(signal_handler.request_started_handler, app)
 request_finished.connect(signal_handler.request_finished_handler, app)
