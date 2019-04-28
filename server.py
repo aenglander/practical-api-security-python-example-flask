@@ -1,10 +1,17 @@
 from flask import Flask, request, jsonify, request_started, request_finished
 from jwkest.jwk import SYMKey
-from werkzeug.contrib.cache import SimpleCache
+from cachelib import SimpleCache
 
 from exceptions import HttpException
+from signals import OrderedSignalHandler
 
 app = Flask(__name__)
+
+
+signal_handler = OrderedSignalHandler()
+
+request_started.connect(signal_handler.request_started_handler, app)
+request_finished.connect(signal_handler.request_finished_handler, app)
 
 
 @app.errorhandler(Exception)
