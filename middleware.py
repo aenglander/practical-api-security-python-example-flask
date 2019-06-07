@@ -7,6 +7,7 @@ from json import dumps
 from typing import List, Tuple, Dict
 
 from cachelib import BaseCache
+from flask import Flask
 from jwkest import JWKESTException
 from jwkest.jwe import JWE
 from jwkest.jwk import Key
@@ -229,6 +230,33 @@ class TokenMiddleware:
             jws = JWS(dumps(claims), alg="HS256")
             signed_content = jws.sign_compact(keys=self.__keys)
             delayed_response.response_headers.append(('X-JWT', signed_content))
+        start_response(delayed_response.status, delayed_response.response_headers, delayed_response.exc_info)
+        return response
+
+
+class FlaskImpersonatorMiddleware(Flask):
+    """
+    This middleware allows the Flask runner to still work as expected when your Flask
+    app is wrapped inside of middleware. It's a bit of a hack but prevents the loss
+    of the ability to start and configure the app like any other Flask app.
+    """
+
+    def __init__(self, app: callable, flask_app: Flask):
+        """
+        Override the init since we're not actually Flask. We're just impersonating Flask
+        :param app: The WSGI app that will process requests
+        :param flask_app: The Flask app that will be configured. It should be at
+        the core of your provided app to work effectively
+        """
+        self.__flask_app = flask_app
+        self.__app = app
+
+    def __getattr__(self, item):
+        return getattr(self.__flask_app, item)
+
+    def __call__(self, environ: Dict[str, str], start_response: callable):
+        delayed_response = DelayedResponse()
+        response = self.__app(environ, delayed_response)
         start_response(delayed_response.status, delayed_response.response_headers, delayed_response.exc_info)
         return response
 

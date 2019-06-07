@@ -5,12 +5,12 @@ from werkzeug.serving import run_simple
 
 from exceptions import HttpException
 from middleware import RateLimitingMiddleware, ReplayPreventionMiddleware, EncryptionMiddleware, \
-    TokenMiddleware
+    TokenMiddleware, FlaskImpersonatorMiddleware
 
-app = Flask(__name__)
+flask_app = Flask(__name__)
 
 
-@app.errorhandler(Exception)
+@flask_app.errorhandler(Exception)
 def error_handler(exception: Exception):
     if isinstance(exception, HttpException):
         response = jsonify({'error': exception.message}), exception.code
@@ -20,7 +20,7 @@ def error_handler(exception: Exception):
     return response
 
 
-@app.route('/', methods=('GET', 'POST'))
+@flask_app.route('/', methods=('GET', 'POST'))
 def root():
     if request.method == 'POST':
         try:
@@ -40,11 +40,9 @@ cache = SimpleCache()
 encryption_keys = [SYMKey(use="enc", kid="key1", key="bc926745ef6c8dda6ed2689d08d5793d7525cb81")]
 signature_keys = [SYMKey(use="sig", kid="key1", key="bc926745ef6c8dda6ed2689d08d5793d7525cb81")]
 
-app = EncryptionMiddleware(app, encryption_keys)
+app = EncryptionMiddleware(flask_app, encryption_keys)
 app = TokenMiddleware(app, signature_keys, leeway=1, cache=cache)
 app = RateLimitingMiddleware(app, cache, 1, 10)
 app = ReplayPreventionMiddleware(app, cache)
-
-if __name__ == '__main__':
-    run_simple('localhost', 5000, app,
-               use_reloader=True, use_debugger=True, use_evalex=True)
+app = FlaskImpersonatorMiddleware(app, flask_app)
+del flask_app
