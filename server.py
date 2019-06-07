@@ -1,29 +1,13 @@
 from flask import Flask, request, jsonify, request_started, request_finished
 from jwkest.jwk import SYMKey
 from cachelib import SimpleCache
+from werkzeug.serving import run_simple
 
 from exceptions import HttpException
-from signals import OrderedSignalHandler, ReplayPreventionSignalHandler, \
-    RateLimitingSignalHandler, EncryptionSignalHandler, TokenSignalHandler
+from middleware import RateLimitingMiddleware, ReplayPreventionMiddleware, EncryptionMiddleware, \
+    TokenMiddleware
 
 app = Flask(__name__)
-
-
-cache = SimpleCache()
-replay_prevention_signal_handler = ReplayPreventionSignalHandler(cache)
-rate_limiting_signal_handler = RateLimitingSignalHandler(cache, 1, 10)
-token_signal_handler = TokenSignalHandler(
-    [SYMKey(use="sig", kid="key1", key="bc926745ef6c8dda6ed2689d08d5793d7525cb81")], leeway=1, cache=cache)
-encryption_signal_handler = EncryptionSignalHandler(
-    [SYMKey(use="enc", kid="key1", key="bc926745ef6c8dda6ed2689d08d5793d7525cb81")])
-
-signal_handler = OrderedSignalHandler(replay_prevention_signal_handler,
-                                      rate_limiting_signal_handler,
-                                      token_signal_handler,
-                                      encryption_signal_handler)
-
-request_started.connect(signal_handler.request_started_handler, app)
-request_finished.connect(signal_handler.request_finished_handler, app)
 
 
 @app.errorhandler(Exception)
@@ -51,5 +35,16 @@ def root():
     return jsonify(Hello=name), 200
 
 
+cache = SimpleCache()
+
+encryption_keys = [SYMKey(use="enc", kid="key1", key="bc926745ef6c8dda6ed2689d08d5793d7525cb81")]
+signature_keys = [SYMKey(use="sig", kid="key1", key="bc926745ef6c8dda6ed2689d08d5793d7525cb81")]
+
+app = EncryptionMiddleware(app, encryption_keys)
+app = TokenMiddleware(app, signature_keys, leeway=1, cache=cache)
+app = RateLimitingMiddleware(app, cache, 1, 10)
+app = ReplayPreventionMiddleware(app, cache)
+
 if __name__ == '__main__':
-    app.run()
+    run_simple('localhost', 5000, app,
+               use_reloader=True, use_debugger=True, use_evalex=True)
